@@ -23,6 +23,11 @@ int	min(int a, int b, int c)
 	return (b < c ? b : c);
 }
 
+static int invalid(char c)
+{
+    return (c < 32 || c > 126);
+}
+
 char	**get_map(t_bsq *bsq, char *filename)
 {
 	FILE *file = filename ? fopen(filename, "r") : stdin;
@@ -47,17 +52,18 @@ char	**get_map(t_bsq *bsq, char *filename)
 	return (filename && fclose(file), map);
 }
 
-int	check_map(t_bsq *bsq)
+int check_map(t_bsq *bsq)
 {
-	int i = 0, j;
+    int i = 0, j;
 
-	if (!bsq->map || bsq->height < 1 || bsq->width < 1 ||
-		bsq->empty < 32 || bsq->empty > 126 || bsq->full < 32 ||
-		bsq->full > 126 || bsq->obstacle < 32 || bsq->obstacle > 126 ||
-		bsq->empty == bsq->full || bsq->empty == bsq->obstacle ||
-		bsq->full == bsq->obstacle)
-		return (0);
-	while (i < bsq->height)
+    if (!bsq->map || bsq->height < 1 || bsq->width < 1)
+        return (0);
+    if (invalid(bsq->empty) || invalid(bsq->full) || invalid(bsq->obstacle))
+        return (0);
+    if (bsq->empty == bsq->full || bsq->empty == bsq->obstacle || bsq->full == bsq->obstacle)
+        return (0);
+        
+    while (i < bsq->height)
 	{
 		if (ft_strlen(bsq->map[i]) != bsq->width)
 			return (0);
@@ -75,20 +81,26 @@ int	check_map(t_bsq *bsq)
 
 int	solve_bsq(t_bsq *bsq)
 {
-	int max_i = 0, max_j = 0, max_size = 0, **dp, i = 0, j;
-
-	if (!(dp = malloc(sizeof(int *) * bsq->height)))
+	int max_size = 0, max_i = 0, max_j = 0;
+	int i = 0, j;
+	int **dp = malloc(sizeof(int *) * bsq->height);
+	if (!dp)
 		return (1);
 	while (i < bsq->height)
 	{
-		if (!(dp[i] = malloc(sizeof(int) * bsq->width)))
+		dp[i] = malloc(sizeof(int) * bsq->width);
+		if (!dp[i])
 			return (free_map((char **)dp, i), 1);
 		j = 0;
 		while (j < bsq->width)
 		{
-			dp[i][j] = (bsq->map[i][j] == bsq->obstacle) ? 0 :
-				(i == 0 || j == 0) ? 1 :
-				1 + min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+			if (bsq->map[i][j] == bsq->obstacle)
+				dp[i][j] = 0;
+			else if (i == 0 || j == 0)
+				dp[i][j] = 1;
+			else
+				dp[i][j] = 1 + min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+			
 			if (dp[i][j] > max_size)
 				(max_size = dp[i][j], max_i = i, max_j = j);
 			j++;
@@ -103,7 +115,9 @@ int	solve_bsq(t_bsq *bsq)
 			bsq->map[i][j++] = bsq->full;
 		i++;
 	}
-	return (free_map((char **)dp, bsq->height), 0);
+	
+	free_map((char **)dp, bsq->height);
+	return (0);
 }
 
 int	process_file(char *filename)
@@ -113,7 +127,7 @@ int	process_file(char *filename)
 	if (!bsq)
 		return (1);
 
-		if (!(bsq->map = get_map(bsq, filename)) || !check_map(bsq) || solve_bsq(bsq))
+	if (!(bsq->map = get_map(bsq, filename)) || !check_map(bsq) || solve_bsq(bsq))
 	{
 		if (bsq->map)
 			free_map(bsq->map, bsq->height);

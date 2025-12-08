@@ -24,11 +24,3 @@ int		solve_bsq(t_bsq *bsq);
 
 #endif
 
-
-
-
-
-
-
-
-#endif
