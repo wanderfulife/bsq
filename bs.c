@@ -1,5 +1,13 @@
 #include "bsq.h"
 
+int ft_strlen(char *s)
+{
+    int i = 0;
+    while (s[i])
+        i++;
+    return (i);
+}
+
 int min(int a, int b, int c)
 {
     if (a < b && a < c)
@@ -7,12 +15,9 @@ int min(int a, int b, int c)
     return (b < c ? b : c);
 }
 
-int ft_strlen(char *s)
+int invalid(char c)
 {
-    int i = 0;
-    while (s[i])
-        i++;
-    return (i);
+    return (c < 32 || c > 126);
 }
 
 void free_map(char **map, int height)
@@ -23,10 +28,6 @@ void free_map(char **map, int height)
     free(map);
 }
 
-int invalid(char c)
-{
-    return (c < 32 || c > 126);
-}
 
 char **get_map(t_bsq *bsq, char *filename)
 {
@@ -34,18 +35,18 @@ char **get_map(t_bsq *bsq, char *filename)
     char **map, *line = NULL;
     size_t len = 0;
     int i = 0;
-
+    
     if (!file || fscanf(file, "%d %c %c %c\n", &bsq->height, &bsq->empty, &bsq->obstacle, &bsq->full) != 4 || bsq->height <= 0)
-        return (filename && file && fclose(file), NULL);
+    return (filename && file && fclose(file), NULL);
     if (!(map = malloc(sizeof(char *) * bsq->height)))
-        return (filename && fclose(file), NULL);
+    return (filename && fclose(file), NULL);
     while (i < bsq->height)
     {
         line = NULL;
         if (getline(&line, &len, file) == -1)
-            return (free_map(map, i), filename && fclose(file), NULL);
+        return (free_map(map, i), filename && fclose(file), NULL);
         if (line[ft_strlen(line) - 1] == '\n')
-            line[ft_strlen(line) - 1] = '\0';
+        line[ft_strlen(line) - 1] = '\0';
         map[i++] = line;
     }
     bsq->width = ft_strlen(map[0]);
@@ -55,12 +56,11 @@ char **get_map(t_bsq *bsq, char *filename)
 int check_map(t_bsq *bsq)
 {
     int i = 0, j;
-
     if (!bsq->map || bsq->height < 1 || bsq->width < 1)
         return (0);
     if (invalid(bsq->empty) || invalid(bsq->full) || invalid(bsq->obstacle))
         return (0);
-    if (bsq->empty == bsq->full || bsq->empty == bsq->obstacle || bsq->full == bsq->obstacle)
+    if (bsq->empty == bsq->full || bsq->empty == bsq->obstacle || bsq->obstacle == bsq->full)
         return (0);
     while (i < bsq->height)
     {
@@ -78,13 +78,52 @@ int check_map(t_bsq *bsq)
     return (1);
 }
 
+int solve_bsq(t_bsq *bsq)
+{
+    int max_size = 0, max_i = 0, max_j = 0;
+    int i = 0, j;
+    int **dp = malloc(sizeof(int *) * bsq->height);
+    if (!dp)
+        return (1);
+    while (i < bsq->height)
+    {
+        dp[i] = malloc(sizeof(int) * bsq->width);
+        if (!dp[i])
+            return (free_map((char **)dp, i), 1);
+        j = 0;
+        while (j < bsq->width)
+        {
+            if (bsq->map[i][j] == bsq->obstacle)
+                dp[i][j] = 0;
+            else if (i == 0 || j == 0)
+                dp[i][j] = 1;
+            else
+                dp[i][j] = 1 + min(dp[i-1][j-1], dp[i-1][j], dp[i][j-1]);
+            if (dp[i][j] > max_size)
+                (max_size = dp[i][j], max_i = i, max_j = j);
+            j++;
+        }
+        i++;
+    }
+    i = max_i - max_size + 1;
+    while (i <= max_i)
+    {
+        j = max_j - max_size + 1;
+        while (j <= max_j)
+            bsq->map[i][j++] = bsq->full;
+        i++;
+    }
+    free_map((char **)dp, bsq->height);
+    return (0);
+}
+
 int process_file(char *filename)
 {
     int i = 0;
     t_bsq *bsq = malloc(sizeof(t_bsq));
     if (!bsq)
         return (1);
-    
+
     if (!(bsq->map = get_map(bsq, filename)) || !check_map(bsq) || solve_bsq(bsq))
     {
         if (bsq->map)
@@ -92,36 +131,9 @@ int process_file(char *filename)
         return (free(bsq), fprintf(stderr, "map error\n"), 1);
     }
     while (i < bsq->height)
-        fprintf(stdout,"%s\n", bsq->map[i++]);
+        fprintf(stdout, "%s\n", bsq->map[i++]);
     return (free_map(bsq->map, bsq->height), free(bsq), 0);
-}
-
-int solve_bsq(t_bsq *bsq)
-{
-    int max_i = 0;
-    int max_j = 0;
-    int max_size = 0;
-    int i = 0, j;
-
-    int **dp = malloc(sizeof(int *) * bsq->height);
-    if (!dp)
-        return (1);
-
-    while (i < bsq->height)
-    {
-        dp[i] = malloc(sizeof(int *) * bsq->width);
-        if (!dp[i])
-            return (free_map((char **)dp, i), 1);
-        
-        j = 0;
-        while (j < bsq->width)
-        {
-            if (bsq->map[i][j] == bsq->obstacle)
-                dp[i][j] = 0;
-            else if (i == 0 && j == 0)
-                dp[i][j] = 1;
-        }
-    }
+    
 }
 
 int main(int ac, char **av)
@@ -129,11 +141,12 @@ int main(int ac, char **av)
     int i = 1;
     if (ac == 1)
         return (process_file(NULL), 0);
+    
     while (i < ac)
     {
         process_file(av[i]);
         if (i < ac - 1)
-            fprintf(stdout, "\n");
+            fprintf(stdout,"\n");
         i++;
     }
     return (0);

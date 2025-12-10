@@ -23,7 +23,7 @@ int	min(int a, int b, int c)
 	return (b < c ? b : c);
 }
 
-static int invalid(char c)
+int invalid(char c)
 {
     return (c < 32 || c > 126);
 }
@@ -54,21 +54,19 @@ char	**get_map(t_bsq *bsq, char *filename)
 
 int check_map(t_bsq *bsq)
 {
-    int i = 0, j;
-
-    if (!bsq->map || bsq->height < 1 || bsq->width < 1)
-        return (0);
-    if (invalid(bsq->empty) || invalid(bsq->full) || invalid(bsq->obstacle))
-        return (0);
-    if (bsq->empty == bsq->full || bsq->empty == bsq->obstacle || bsq->full == bsq->obstacle)
-        return (0);
-        
-    while (i < bsq->height)
+	int i = 0, j;
+	if (!bsq->map || bsq->height < 1 || bsq->width < 1)
+		return (0);
+	if (invalid(bsq->empty) || invalid(bsq->full) || invalid(bsq->obstacle))
+		return (0);
+	if (bsq->empty == bsq->full || bsq->empty == bsq->obstacle || bsq->full == bsq->obstacle)
+		return (0);
+	while (i < bsq->height)
 	{
-		if (ft_strlen(bsq->map[i]) != bsq->width)
+		if (bsq->width != ft_strlen(bsq->map[i]))
 			return (0);
 		j = 0;
-		while (j < bsq->width)
+		while (j <bsq->width)
 		{
 			if (bsq->map[i][j] != bsq->empty && bsq->map[i][j] != bsq->obstacle)
 				return (0);
@@ -151,5 +149,5 @@ int	main(int ac, char **av) {
 			fprintf(stdout, "\n");
 		i++;
 	}
-	return (0);
+return (0);
 }
