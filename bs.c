@@ -28,25 +28,24 @@ void free_map(char **map, int height)
     free(map);
 }
 
-
 char **get_map(t_bsq *bsq, char *filename)
 {
     FILE *file = filename ? fopen(filename, "r") : stdin;
     char **map, *line = NULL;
     size_t len = 0;
     int i = 0;
-    
+
     if (!file || fscanf(file, "%d %c %c %c\n", &bsq->height, &bsq->empty, &bsq->obstacle, &bsq->full) != 4 || bsq->height <= 0)
-    return (filename && file && fclose(file), NULL);
+        return (filename && file && fclose(file), NULL);
     if (!(map = malloc(sizeof(char *) * bsq->height)))
-    return (filename && fclose(file), NULL);
+        return (filename && fclose(file), NULL);
     while (i < bsq->height)
     {
         line = NULL;
         if (getline(&line, &len, file) == -1)
-        return (free_map(map, i), filename && fclose(file), NULL);
+            return (free_map(map, i), filename && fclose(file), NULL);
         if (line[ft_strlen(line) - 1] == '\n')
-        line[ft_strlen(line) - 1] = '\0';
+            line[ft_strlen(line) - 1] = '\0';
         map[i++] = line;
     }
     bsq->width = ft_strlen(map[0]);
@@ -55,12 +54,13 @@ char **get_map(t_bsq *bsq, char *filename)
 
 int check_map(t_bsq *bsq)
 {
-    int i = 0, j;
+    int i =0, j;
+
     if (!bsq->map || bsq->height < 1 || bsq->width < 1)
         return (0);
     if (invalid(bsq->empty) || invalid(bsq->full) || invalid(bsq->obstacle))
         return (0);
-    if (bsq->empty == bsq->full || bsq->empty == bsq->obstacle || bsq->obstacle == bsq->full)
+    if (bsq->empty == bsq->full || bsq->empty == bsq->obstacle || bsq->full == bsq->obstacle)
         return (0);
     while (i < bsq->height)
     {
@@ -113,7 +113,7 @@ int solve_bsq(t_bsq *bsq)
             bsq->map[i][j++] = bsq->full;
         i++;
     }
-    free_map((char **)dp, bsq->height);
+    free_map((char**)dp, bsq->height);
     return (0);
 }
 
@@ -123,7 +123,7 @@ int process_file(char *filename)
     t_bsq *bsq = malloc(sizeof(t_bsq));
     if (!bsq)
         return (1);
-
+    
     if (!(bsq->map = get_map(bsq, filename)) || !check_map(bsq) || solve_bsq(bsq))
     {
         if (bsq->map)
@@ -133,7 +133,6 @@ int process_file(char *filename)
     while (i < bsq->height)
         fprintf(stdout, "%s\n", bsq->map[i++]);
     return (free_map(bsq->map, bsq->height), free(bsq), 0);
-    
 }
 
 int main(int ac, char **av)
@@ -141,7 +140,6 @@ int main(int ac, char **av)
     int i = 1;
     if (ac == 1)
         return (process_file(NULL), 0);
-    
     while (i < ac)
     {
         process_file(av[i]);
